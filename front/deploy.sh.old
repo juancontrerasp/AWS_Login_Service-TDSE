@@ -1,13 +1,13 @@
 #!/bin/bash
 # ========================================
-# Backend Deployment Script
-# Domain: securitytdseback.duckdns.org
+# Frontend Deployment Script
+# Domain: securitytdse.duckdns.org
 # ========================================
 
 set -e  # Exit on any error
 
-echo "🚀 Starting Backend Deployment..."
-echo "================================="
+echo "🚀 Starting Frontend Deployment..."
+echo "=================================="
 
 # Colors for output
 RED='\033[0;31m'
@@ -57,15 +57,15 @@ fi
 
 # Step 5: Get SSL Certificate
 echo -e "\n${GREEN}[5/8]${NC} Getting SSL Certificate..."
-if [ ! -d "/etc/letsencrypt/live/securitytdseback.duckdns.org" ]; then
+if [ ! -d "/etc/letsencrypt/live/securitytdse.duckdns.org" ]; then
     echo "Stopping any service on port 80..."
     sudo systemctl stop httpd 2>/dev/null || true
     sudo fuser -k 80/tcp 2>/dev/null || true
     
-    echo "Requesting certificate for securitytdseback.duckdns.org..."
-    sudo certbot certonly --standalone -d securitytdseback.duckdns.org --non-interactive --agree-tos --email admin@securitytdseback.duckdns.org
+    echo "Requesting certificate for securitytdse.duckdns.org..."
+    sudo certbot certonly --standalone -d securitytdse.duckdns.org --non-interactive --agree-tos --email admin@securitytdse.duckdns.org
     
-    if [ -d "/etc/letsencrypt/live/securitytdseback.duckdns.org" ]; then
+    if [ -d "/etc/letsencrypt/live/securitytdse.duckdns.org" ]; then
         echo -e "${GREEN}Certificate obtained successfully! ✓${NC}"
     else
         echo -e "${RED}Failed to obtain certificate. Check your DNS settings.${NC}"
@@ -78,24 +78,8 @@ fi
 
 # Step 6: Verify configuration
 echo -e "\n${GREEN}[6/8]${NC} Verifying configuration..."
-
-# Setup .env from .env.production if .env doesn't exist
-if [ ! -f ".env" ]; then
-    if [ -f ".env.production" ]; then
-        echo "Copying .env.production to .env..."
-        cp .env.production .env
-        echo ".env created from .env.production ✓"
-    else
-        echo -e "${RED}ERROR: Neither .env nor .env.production found!${NC}"
-        echo "Please ensure the repository includes .env.production"
-        exit 1
-    fi
-else
-    echo ".env already exists ✓"
-fi
-
-if [ ! -f "apache/httpd.conf" ]; then
-    echo -e "${RED}ERROR: apache/httpd.conf not found!${NC}"
+if [ ! -f "apache-frontend.conf" ]; then
+    echo -e "${RED}ERROR: apache-frontend.conf not found!${NC}"
     exit 1
 fi
 
@@ -104,31 +88,36 @@ if [ ! -f "docker-compose.yml" ]; then
     exit 1
 fi
 
+if [ ! -f "index.html" ]; then
+    echo -e "${RED}ERROR: index.html not found!${NC}"
+    exit 1
+fi
+
 echo "Configuration files verified ✓"
 
 # Step 7: Deploy with Docker Compose
 echo -e "\n${GREEN}[7/8]${NC} Starting Docker Compose services..."
 docker compose down 2>/dev/null || true
-docker compose up -d --build
+docker compose up -d
 
 echo "Waiting for services to start..."
-sleep 10
+sleep 5
 
 # Step 8: Verify deployment
 echo -e "\n${GREEN}[8/8]${NC} Verifying deployment..."
 docker compose ps
 
 echo -e "\nChecking service health..."
-max_attempts=12
+max_attempts=6
 attempt=1
 while [ $attempt -le $max_attempts ]; do
     echo -e "Attempt $attempt/$max_attempts..."
-    if curl -k -s https://securitytdseback.duckdns.org/actuator/health | grep -q "UP"; then
-        echo -e "${GREEN}✓ Backend is healthy and responding!${NC}"
+    if curl -k -s -I https://securitytdse.duckdns.org | grep -q "200 OK"; then
+        echo -e "${GREEN}✓ Frontend is accessible and responding!${NC}"
         break
     fi
     if [ $attempt -eq $max_attempts ]; then
-        echo -e "${YELLOW}Warning: Backend health check timeout. Check logs:${NC}"
+        echo -e "${YELLOW}Warning: Frontend health check timeout. Check logs:${NC}"
         echo "  docker compose logs -f"
         break
     fi
@@ -138,20 +127,20 @@ done
 
 # Setup auto-renewal
 echo -e "\n${GREEN}Setting up automatic certificate renewal...${NC}"
-CRON_JOB="0 0,12 * * * certbot renew --quiet && docker compose -f $(pwd)/docker-compose.yml restart apache"
+CRON_JOB="0 0,12 * * * certbot renew --quiet && docker compose -f $(pwd)/docker-compose.yml restart apache-frontend"
 (crontab -l 2>/dev/null | grep -v "certbot renew"; echo "$CRON_JOB") | crontab -
 echo "Certificate auto-renewal configured ✓"
 
 # Final status
 echo -e "\n${GREEN}=================================${NC}"
-echo -e "${GREEN}🎉 Backend Deployment Complete!${NC}"
+echo -e "${GREEN}🎉 Frontend Deployment Complete!${NC}"
 echo -e "${GREEN}=================================${NC}"
 echo ""
-echo "Backend URL: https://securitytdseback.duckdns.org"
-echo "Health Check: https://securitytdseback.duckdns.org/actuator/health"
-echo "Swagger UI: https://securitytdseback.duckdns.org/swagger-ui/index.html"
+echo "Frontend URL: https://securitytdse.duckdns.org"
 echo ""
 echo "View logs with: docker compose logs -f"
 echo "Stop services: docker compose down"
 echo ""
-echo -e "${YELLOW}Next: Deploy the frontend on the other EC2 instance${NC}"
+echo -e "${GREEN}✅ All services deployed! You can now access:${NC}"
+echo -e "   Frontend: ${GREEN}https://securitytdse.duckdns.org${NC}"
+echo -e "   Backend:  ${GREEN}https://securitytdseback.duckdns.org${NC}"
