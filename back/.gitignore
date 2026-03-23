@@ -1,0 +1,11 @@
+target/
+.env
+*.p12
+*.jks
+*.cer
+.DS_Store
+*.iml
+.idea/
+*.class
+.code/
+.vscode/

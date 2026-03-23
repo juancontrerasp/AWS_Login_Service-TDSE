@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Secure Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card dashboard">
+            <div class="welcome-header">
+                <h1>✅ Nice, you're in!</h1>
+                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+            </div>
+            
+            <div class="user-info">
+                <div class="user-avatar">
+                    <span id="userInitial">U</span>
+                </div>
+                <h2 id="userName">Loading...</h2>
+                <p id="userEmail" class="user-email"></p>
+            </div>
+
+            <div class="info-section">
+                <h3>🎉 Authentication Successful</h3>
+                <div class="success-details">
+                    <div class="detail-item">
+                        <span class="label">Username:</span>
+                        <span id="usernameDisplay" class="value">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Email:</span>
+                        <span id="emailDisplay" class="value">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Session:</span>
+                        <span class="value">Active (JWT)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Security:</span>
+                        <span class="value">TLS Encrypted</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h3>🔐 Your Session is Secure</h3>
+                <ul>
+                    <li>Authenticated via JWT token</li>
+                    <li>Password stored as BCrypt hash</li>
+                    <li>All communication over HTTPS (production)</li>
+                    <li>Stateless authentication</li>
+                </ul>
+            </div>
+
+            <div class="api-test">
+                <h3>🧪 Test Protected API</h3>
+                <button id="testApiBtn" class="btn btn-primary">Call /api/auth/me</button>
+                <pre id="apiResponse" class="api-response"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
