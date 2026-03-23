@@ -19,40 +19,33 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── Spring Boot App ─────────────────────────────────────────────────────────
+  # ── Spring Boot App with Native HTTPS ──────────────────────────────────────
   login-service:
     build: .
     container_name: login_service
     restart: unless-stopped
     environment:
-      PORT: 8080
+      PORT: 8443
       DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-logindb}
       DB_USER: ${DB_USER:-loginuser}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      # HTTPS Configuration
+      SERVER_SSL_ENABLED: "true"
+      SERVER_SSL_KEY_STORE: /etc/letsencrypt/live/securitytdseback.duckdns.org/keystore.p12
+      SERVER_SSL_KEY_STORE_PASSWORD: ${SSL_KEYSTORE_PASSWORD:-changeit}
+      SERVER_SSL_KEY_STORE_TYPE: PKCS12
     ports:
-      - "8080:8080"
+      - "80:8080"    # HTTP (for redirect)
+      - "443:8443"   # HTTPS
+    volumes:
+      # Mount Let's Encrypt certificates
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       postgres:
         condition: service_healthy
-
-  # ── Apache HTTP Server (reverse proxy, TLS termination) ─────────────────────
-  apache:
-    image: httpd:2.4-alpine
-    container_name: login_apache
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./apache/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
-      # Certbot certs from EC2 host — already issued
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/lib/letsencrypt:/var/lib/letsencrypt:ro
-    depends_on:
-      - login-service
 
 volumes:
   postgres_data:
