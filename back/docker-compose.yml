@@ -39,22 +39,20 @@ services:
         condition: service_healthy
 
   # ── Apache HTTP Server (reverse proxy, TLS termination) ─────────────────────
-  # NOTE: Commented out for local development (requires Let's Encrypt certs)
-  # Uncomment this section when deploying to AWS EC2 with valid certificates
-  #apache:
-  #  image: httpd:2.4-alpine
-  #  container_name: login_apache
-  #  restart: unless-stopped
-  #  ports:
-  #    - "80:80"
-  #    - "443:443"
-  #  volumes:
-  #    - ./apache/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
-  #    # Certbot certs from EC2 host — already issued
-  #    - /etc/letsencrypt:/etc/letsencrypt:ro
-  #    - /var/lib/letsencrypt:/var/lib/letsencrypt:ro
-  #  depends_on:
-  #    - login-service
+  apache:
+    image: httpd:2.4-alpine
+    container_name: login_apache
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./apache/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+      # Certbot certs from EC2 host — already issued
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/lib/letsencrypt:/var/lib/letsencrypt:ro
+    depends_on:
+      - login-service
 
 volumes:
   postgres_data:
