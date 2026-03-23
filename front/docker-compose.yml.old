@@ -1,0 +1,17 @@
+services:
+  # ── Apache HTTP Server (Frontend) ──────────────────────────────────────────
+  apache-frontend:
+    image: httpd:2.4-alpine
+    container_name: frontend_apache
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Serve static files from current directory
+      - ./:/usr/local/apache2/htdocs/:ro
+      # Apache configuration
+      - ./apache-frontend.conf:/usr/local/apache2/conf/httpd.conf:ro
+      # Let's Encrypt certificates from EC2 host
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/lib/letsencrypt:/var/lib/letsencrypt:ro

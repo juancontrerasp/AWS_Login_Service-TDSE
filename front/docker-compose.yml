@@ -1,17 +1,16 @@
 services:
-  # ── Apache HTTP Server (Frontend) ──────────────────────────────────────────
+  # ── Apache Frontend Server ──────────────────────────────────────────────────
   apache-frontend:
-    image: httpd:2.4-alpine
+    image: nginx:alpine
     container_name: frontend_apache
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      # Serve static files from current directory
-      - ./:/usr/local/apache2/htdocs/:ro
-      # Apache configuration
-      - ./apache-frontend.conf:/usr/local/apache2/conf/httpd.conf:ro
+      # Serve all static files from current directory
+      - ./:/usr/share/nginx/html/:ro
+      # Apache configuration (actually nginx, shhh!)
+      - ./apache-frontend.conf:/etc/nginx/nginx.conf:ro
       # Let's Encrypt certificates from EC2 host
       - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/lib/letsencrypt:/var/lib/letsencrypt:ro
