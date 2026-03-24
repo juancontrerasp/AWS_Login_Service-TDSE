@@ -1,281 +1,139 @@
 # AWS_Login_Service-TDSE
 
-## 🚀 Enterprise Architecture Workshop: Secure Application Design
 
-A production-ready, secure login application deployed on AWS with:
-- **Backend**: Spring Boot REST API with JWT authentication (securitytdseback.duckdns.org)
-- **Frontend**: Apache-served HTML/JavaScript client (securitytdse.duckdns.org)
-- **Security**: TLS/HTTPS, BCrypt password hashing, Let's Encrypt certificates
-- **Architecture**: Two-server deployment on AWS EC2
+## Juan Pablo Contreras Parra
 
 ---
 
-## ✅ READY TO DEPLOY - Clone and Go!
+Secure AWS login service with a separate frontend and backend, deployed with HTTPS.
 
-This repository is **100% configured** for deployment with your domains:
-- **Backend**: `securitytdseback.duckdns.org`
-- **Frontend**: `securitytdse.duckdns.org`
+This GitHub repository contains all source code and a **self-contained README** with deployment, architecture, testing evidence placeholders, and demo video placeholder for workshop submission.
 
-### Quick Start Deployment
+## Repository Contents
 
-**See [DEPLOY.md](DEPLOY.md) for complete deployment instructions!**
+- `back/` - Spring Boot backend (JWT auth, PostgreSQL, Apache reverse proxy)
+- `front/` - HTML/CSS/JavaScript frontend served by Apache
+- `README.md` - Main document with full deployment and architecture content
 
-Or use the automated scripts:
+## Deployment Instructions
+
+### Prerequisites
+
+- 2 AWS EC2 instances (Amazon Linux preferred): one for frontend, one for backend
+- Security Group inbound rules: `22`, `80`, `443`
+- Domains pointed to EC2 public IPs (in this case):
+  - Frontend: `securitytdse.duckdns.org`
+  - Backend: `securitytdseback.duckdns.org`
+- SSH key for both instances
+
+### 1) Deploy Backend (EC2 for API)
 
 ```bash
-# On Backend EC2 Instance:
-git clone https://github.com/YOUR_USERNAME/AWS_Login_Service-TDSE.git
+ssh -i your-key.pem ec2-user@BACKEND_EC2_IP
+git clone https://github.com/juancontrerasp/AWS_Login_Service-TDSE.git
 cd AWS_Login_Service-TDSE/back
-chmod +x deploy.sh
-./deploy.sh
+docker compose up -d --build
+docker compose ps
+```
 
-# On Frontend EC2 Instance:
+
+### 2) Deploy Frontend (EC2 for Web)
+
+```bash
+ssh -i your-key.pem ec2-user@FRONTEND_EC2_IP
 git clone https://github.com/YOUR_USERNAME/AWS_Login_Service-TDSE.git
 cd AWS_Login_Service-TDSE/front
 chmod +x deploy.sh
 ./deploy.sh
+docker compose ps
 ```
 
----
+### 3) Verify Endpoints
 
-## 📚 Documentation
+```bash
+# Frontend
+curl -I https://securitytdse.duckdns.org
 
-- **[DEPLOY.md](DEPLOY.md)** - Complete deployment guide (START HERE!)
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design
-- **[AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md)** - Detailed AWS setup instructions
-- **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)** - Step-by-step checklist
-- **[QUICK_START.md](QUICK_START.md)** - Local development setup
-
----
-
-## 🏗️ Architecture Overview
-
-```
-Internet (HTTPS)
-    │
-    ├─► EC2 Instance 1: Frontend (securitytdse.duckdns.org:443)
-    │   • Apache serving HTML/CSS/JS over HTTPS
-    │   • Let's Encrypt TLS certificate
-    │   • Security headers configured
-    │
-    └─► EC2 Instance 2: Backend (securitytdseback.duckdns.org:443)
-        • Apache: Reverse proxy with TLS termination
-        • Spring Boot: RESTful API (JWT authentication)
-        • PostgreSQL: Database (BCrypt password hashing)
-        • Let's Encrypt TLS certificate
+# Backend health/auth endpoint (example)
+curl -I https://securitytdseback.duckdns.org/api/auth/me
 ```
 
----
+### 4) Functional Test Flow
 
-## 🔒 Security Features
-
-✅ **TLS/HTTPS Encryption**
-- Let's Encrypt certificates
-- Modern TLS protocols (TLSv1.2+)
-- HTTP → HTTPS automatic redirect
-- HSTS headers
-
-✅ **Authentication**
-- JWT token-based auth
-- BCrypt password hashing (strength 10)
-- Secure session management
-
-✅ **Security Headers**
-- X-Frame-Options: DENY
-- X-Content-Type-Options: nosniff
-- Strict-Transport-Security
-- Content-Security-Policy
-
-✅ **Infrastructure**
-- PostgreSQL not exposed to internet
-- Apache reverse proxy
-- Rate limiting on auth endpoints
-- CORS configured for frontend only
-
----
-
-## 📋 Workshop Requirements Compliance
-
-### ✅ All Requirements Met
-
-- [x] Apache server serving HTML+JS client over TLS
-- [x] Spring Framework backend with RESTful APIs
-- [x] Asynchronous JavaScript client
-- [x] Login security with hashed passwords (BCrypt)
-- [x] TLS encryption on both servers
-- [x] Let's Encrypt certificate generation
-- [x] AWS EC2 deployment (two instances)
-- [x] Complete documentation
-- [x] GitHub repository with clear README
-
----
-
-## 🎯 What's Pre-Configured
-
-✅ Backend domain: `securitytdseback.duckdns.org`
-✅ Frontend domain: `securitytdse.duckdns.org`
-✅ Production database password
-✅ Strong JWT secret key
-✅ CORS settings
-✅ Apache configurations
-✅ Docker Compose files
-✅ Deployment scripts
-
-**No manual configuration needed - just deploy!**
-
----
-
-## 🚀 Deployment Process
-
-1. **Setup EC2 Instances** (2x Amazon Linux 2023)
-   - Configure security groups (ports 22, 80, 443)
-   - Point DuckDNS domains to EC2 IPs
-
-2. **Deploy Backend** (Instance 1)
-   ```bash
-   cd AWS_Login_Service-TDSE/back
-   ./deploy.sh
-   ```
-
-3. **Deploy Frontend** (Instance 2)
-   ```bash
-   cd AWS_Login_Service-TDSE/front
-   ./deploy.sh
-   ```
-
-4. **Test Application**
-   - Visit: https://securitytdse.duckdns.org
-   - Register and login
-   - Verify HTTPS lock icon 🔒
-
----
-
-## 🧪 Testing
-
-After deployment:
-
-1. Open https://securitytdse.duckdns.org
+1. Open `https://securitytdse.duckdns.org`
 2. Register a new user
-3. Login with credentials
+3. Login with that user
 4. Access dashboard
-5. Test API call with "Call /api/auth/me"
-6. Verify no CORS errors (F12 console)
-7. Check certificate (click lock icon 🔒)
+5. Trigger authenticated endpoint (`/api/auth/me`)
+6. Confirm no CORS errors in DevTools
+7. Confirm HTTPS lock icon and valid certificate
 
----
+## Architecture Overview
 
-## 🛠️ Technology Stack
-
-**Backend:**
-- Java 17
-- Spring Boot 3.2
-- Spring Security
-- JWT Authentication
-- PostgreSQL 16
-- BCrypt
-- Apache HTTP Server 2.4
-
-**Frontend:**
-- HTML5
-- JavaScript (ES6+)
-- CSS3
-- Apache HTTP Server 2.4
-
-**DevOps:**
-- Docker & Docker Compose
-- Let's Encrypt (Certbot)
-- AWS EC2
-- DuckDNS
-
----
-
-## 📸 For Workshop Submission
-
-After deployment, capture:
-
-1. EC2 instances running (AWS Console)
-2. HTTPS working (browser with lock icon)
-3. Registration flow
-4. Login successful
-5. Dashboard page
-6. Browser DevTools showing:
-   - No CORS errors
-   - HTTPS requests
-   - Security headers
-7. Certificate details
-
----
-
-## 🆘 Troubleshooting
-
-**Backend not responding?**
-```bash
-cd ~/AWS_Login_Service-TDSE/back
-docker compose logs -f
+```mermaid
+flowchart TD
+    A[Internet Users] -->|HTTPS 443| B[Frontend EC2 - securitytdse.duckdns.org]
+    B --> C[Apache - static HTML/CSS/JS]
+    C -->|HTTPS API calls| D[Backend EC2 - securitytdseback.duckdns.org]
+    D --> E[Apache Reverse Proxy + TLS]
+    E --> F[Spring Boot REST API + JWT]
+    F --> G[PostgreSQL]
 ```
 
-**Frontend not loading?**
-```bash
-cd ~/AWS_Login_Service-TDSE/front
-docker compose logs -f
-```
+### Architecture Notes
 
-**Certificate issues?**
-```bash
-sudo certbot certificates
-sudo certbot renew --force-renewal
-```
+- Frontend and backend run on separate EC2 instances.
+- HTTPS/TLS is enabled on both domains (Let's Encrypt).
+- Backend uses JWT authentication and BCrypt password hashing.
+- PostgreSQL is used for user persistence.
 
-**See [DEPLOY.md](DEPLOY.md) for complete troubleshooting guide.**
+## Testing Evidence
 
----
+Add your screenshots below before submission.
 
-## 📝 Project Structure
+### 1) AWS Infrastructure Running
 
-```
-AWS_Login_Service-TDSE/
-├── back/                          # Backend (Spring Boot)
-│   ├── src/                      # Java source code
-│   ├── apache/httpd.conf         # ✅ Configured for securitytdseback.duckdns.org
-│   ├── docker-compose.yml        # ✅ Apache uncommented
-│   ├── .env                      # ✅ Production credentials
-│   └── deploy.sh                 # ✅ Automated deployment script
-│
-├── front/                         # Frontend (HTML/JS)
-│   ├── index.html                # Login page
-│   ├── dashboard.html            # User dashboard
-│   ├── app.js                    # ✅ Backend URL configured
-│   ├── dashboard.js              # ✅ Backend URL configured
-│   ├── apache-frontend.conf      # ✅ Configured for securitytdse.duckdns.org
-│   ├── docker-compose.yml        # ✅ Created and ready
-│   └── deploy.sh                 # ✅ Automated deployment script
-│
-├── DEPLOY.md                      # 👈 START HERE - Complete deployment guide
-├── ARCHITECTURE.md                # System architecture
-├── AWS_DEPLOYMENT.md              # Detailed AWS instructions
-└── DEPLOYMENT_CHECKLIST.md        # Step-by-step checklist
-```
+![img.png](images/img.png)
 
----
+### 2) IP Matching
 
-## 🎓 Workshop Deliverables Checklist
+![img_1.png](images/img_1.png)
+![img_2.png](images/img_2.png)
 
-- [x] Architecture design document (ARCHITECTURE.md)
-- [x] Apache serving HTML+JS over TLS
-- [x] Spring backend with REST APIs
-- [x] Login with hashed passwords
-- [x] TLS/HTTPS on both servers
-- [x] Let's Encrypt certificates
-- [x] GitHub repository with documentation
-- [x] Deployment instructions (DEPLOY.md)
-- [x] Ready for video demonstration
 
----
+### 3) Frontend Over HTTPS
 
-## 📄 License
+![img_3.png](images/img_3.png)
 
-Educational project for Enterprise Architecture Workshop.
+### 4) User Registration Success
 
----
+![img_4.png](images/img_4.png)
 
-**🎉 Ready to deploy! See [DEPLOY.md](DEPLOY.md) to get started!**
+### 5) User Login Success
+
+![img_5.png](images/img_5.png)
+
+
+### 6) DevTools Network
+
+![img_6.png](images/img_6.png)
+
+### 7) TLS Certificate Details
+
+![img_7.png](images/img_7.png)
+
+## 🎥 Very Important: Demo Video Placeholder (HTTPS + Full Flow)
+
+**Video link:**  
+
+https://www.youtube.com/watch?v=Az_z21saz6E
+
+
+## Security Highlights
+
+- TLS/HTTPS on frontend and backend
+- HTTP to HTTPS redirection
+- JWT-based authentication
+- BCrypt password hashing
+- Security headers and controlled CORS
+
