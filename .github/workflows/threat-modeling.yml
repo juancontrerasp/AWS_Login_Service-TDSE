@@ -1,0 +1,244 @@
+name: Threat Modeling - Attack Simulation
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM
+
+jobs:
+  threat-modeling:
+    name: Security Threat Analysis
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: logindb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout Login Service
+        uses: actions/checkout@v4
+        path: login-service
+
+      - name: Checkout Attack Simulation Tool
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/Attack-Simulation-FDSI
+          path: attack-simulation
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Login Service
+        working-directory: login-service/back
+        run: |
+          mvn clean package -DskipTests
+          echo "Login service built successfully"
+
+      - name: Start Login Service
+        working-directory: login-service/back
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/logindb
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgres
+          JWT_SECRET: test-secret-key-for-threat-modeling-only-min-256-bits-long
+          SERVER_PORT: 8080
+        run: |
+          nohup java -jar target/*.jar > app.log 2>&1 &
+          echo $! > app.pid
+          echo "Waiting for application to start..."
+          
+          # Wait for application to be ready
+          for i in {1..60}; do
+            if curl -s http://localhost:8080/actuator/health 2>/dev/null || curl -s http://localhost:8080/ 2>/dev/null; then
+              echo "Application is ready!"
+              break
+            fi
+            echo "Waiting... ($i/60)"
+            sleep 2
+          done
+          
+          # Show application status
+          if curl -s http://localhost:8080/ 2>/dev/null; then
+            echo "✓ Login service is running on port 8080"
+          else
+            echo "Warning: Service may not be fully ready"
+            tail -n 50 app.log
+          fi
+
+      - name: Compile Attack Simulation Engine
+        working-directory: attack-simulation/attack-engine
+        run: |
+          mkdir -p ../out
+          javac -d ../out AttackEngine.java attacks/*.java model/*.java util/*.java
+          echo "Attack simulation engine compiled successfully"
+
+      - name: Run Threat Modeling Attacks
+        working-directory: attack-simulation
+        run: |
+          echo "=== Starting Security Threat Analysis ==="
+          echo "Target: http://localhost:8080"
+          echo ""
+          
+          # Run attack simulation
+          java -cp out AttackEngine
+          
+          echo ""
+          echo "=== Attack Simulation Complete ==="
+
+      - name: Generate Threat Report
+        working-directory: attack-simulation
+        run: |
+          # Create a markdown report from results
+          cat > threat-report.md << 'EOF'
+          # 🛡️ Threat Modeling Report
+          
+          **Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Target:** AWS Login Service
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          
+          ---
+          
+          ## Executive Summary
+          
+          This automated threat modeling analysis simulates real-world attacks against the login service to identify potential security vulnerabilities.
+          
+          ## Attack Categories Tested
+          
+          - 🔐 **SQL Injection** - Database manipulation attempts
+          - 🔑 **Brute Force** - Password guessing attacks
+          - ℹ️ **Information Leakage** - Sensitive data exposure
+          
+          ---
+          
+          ## Detailed Results
+          
+          EOF
+          
+          # Parse JSON and add to report
+          if [ -f results.json ]; then
+            echo "✅ Results file found"
+            cat results.json >> threat-report.md
+            echo "" >> threat-report.md
+            echo "" >> threat-report.md
+            echo "---" >> threat-report.md
+            echo "" >> threat-report.md
+            echo "## Recommendations" >> threat-report.md
+            echo "" >> threat-report.md
+            echo "Review the detailed results above and address any vulnerabilities found." >> threat-report.md
+            echo "- ✅ **Secure**: Continue monitoring" >> threat-report.md
+            echo "- ❌ **Vulnerable**: Immediate action required" >> threat-report.md
+          else
+            echo "⚠️ No results file generated"
+          fi
+
+      - name: Check for Vulnerabilities
+        working-directory: attack-simulation
+        run: |
+          if [ -f results.json ]; then
+            # Check if any vulnerabilities were found
+            if grep -q '"vulnerable": *true' results.json; then
+              echo "::warning::⚠️ VULNERABILITIES DETECTED! Review the threat report."
+              VULN_COUNT=$(grep -c '"vulnerable": *true' results.json || echo "0")
+              echo "::warning::Found $VULN_COUNT potential vulnerabilities"
+              echo "VULNERABILITIES_FOUND=true" >> $GITHUB_ENV
+            else
+              echo "::notice::✅ No vulnerabilities detected in this scan"
+              echo "VULNERABILITIES_FOUND=false" >> $GITHUB_ENV
+            fi
+          else
+            echo "::error::No results file found"
+            exit 1
+          fi
+
+      - name: Upload Threat Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: threat-modeling-report-${{ github.run_number }}
+          path: |
+            attack-simulation/results.json
+            attack-simulation/threat-report.md
+            attack-simulation/dashboard.html
+          retention-days: 90
+
+      - name: Upload Application Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: application-logs-${{ github.run_number }}
+          path: login-service/back/app.log
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const resultsPath = 'attack-simulation/results.json';
+            
+            let comment = '## 🛡️ Threat Modeling Results\n\n';
+            
+            if (fs.existsSync(resultsPath)) {
+              const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+              const vulnerable = results.systems[0]?.attacks?.filter(a => a.vulnerable).length || 0;
+              const total = results.systems[0]?.attacks?.length || 0;
+              
+              if (vulnerable > 0) {
+                comment += `⚠️ **Warning:** ${vulnerable}/${total} attack(s) succeeded\n\n`;
+                comment += '### Vulnerabilities Found:\n';
+                results.systems[0]?.attacks?.forEach(attack => {
+                  if (attack.vulnerable) {
+                    comment += `- ❌ **${attack.name}**: ${attack.details}\n`;
+                  }
+                });
+              } else {
+                comment += `✅ **All Clear:** 0/${total} attacks succeeded\n\n`;
+                comment += 'No vulnerabilities detected in this scan.\n';
+              }
+              
+              comment += `\n📊 [View detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
+            } else {
+              comment += '⚠️ Could not find threat modeling results.\n';
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Stop Login Service
+        if: always()
+        working-directory: login-service/back
+        run: |
+          if [ -f app.pid ]; then
+            PID=$(cat app.pid)
+            if ps -p $PID > /dev/null; then
+              kill $PID
+              echo "Login service stopped (PID: $PID)"
+            fi
+          fi

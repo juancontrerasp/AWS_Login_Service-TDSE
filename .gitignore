@@ -33,3 +33,8 @@ build/
 .vscode/
 .env
 .venv
+
+
+SETUP_COMPLETE.md
+THREAT_MODELING.md
+QUICK_REFERENCE.md

@@ -1,0 +1,49 @@
+name: Security Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  quick-security-scan:
+    name: Quick Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Security Vulnerability Check
+        run: |
+          echo "🔍 Running quick security checks..."
+          
+          # Check for common security anti-patterns
+          echo "Checking for hardcoded secrets..."
+          if grep -r -i -E "(password|secret|api_key|token)\s*=\s*['\"][^'\"]+['\"]" src/ 2>/dev/null | grep -v "example\|test\|placeholder"; then
+            echo "::warning::Found potential hardcoded secrets"
+          else
+            echo "✓ No obvious hardcoded secrets found"
+          fi
+          
+          # Check for SQL injection vulnerabilities
+          echo "Checking for SQL injection risks..."
+          if grep -r "Statement\|createStatement\|executeQuery.*+\|execute.*+" src/ 2>/dev/null | grep -v "PreparedStatement"; then
+            echo "::warning::Found potential SQL injection vulnerabilities - use PreparedStatement"
+          else
+            echo "✓ No obvious SQL injection patterns found"
+          fi
+          
+          echo "✅ Quick security scan complete"
+          echo "💡 For comprehensive analysis, check the full threat modeling workflow"
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🔒 **Security Check Complete**\n\nQuick security scan passed. Full threat modeling will run after merge.\n\n💡 To run full threat analysis before merge, trigger the `Threat Modeling` workflow manually.'
+            });

@@ -1,11 +1,17 @@
 # AWS_Login_Service-TDSE
 
+[![Threat Modeling](https://github.com/juancontrerasp/AWS_Login_Service-TDSE/actions/workflows/threat-modeling.yml/badge.svg)](https://github.com/juancontrerasp/AWS_Login_Service-TDSE/actions/workflows/threat-modeling.yml)
+[![Security Check](https://github.com/juancontrerasp/AWS_Login_Service-TDSE/actions/workflows/security-check.yml/badge.svg)](https://github.com/juancontrerasp/AWS_Login_Service-TDSE/actions/workflows/security-check.yml)
 
 ## Juan Pablo Contreras Parra
 
 ---
 
 Secure AWS login service with a separate frontend and backend, deployed with HTTPS.
+
+### 🛡️ Automated Threat Modeling
+
+This repository includes automated security testing via GitHub Actions. See [Threat Modeling Documentation](.github/THREAT_MODELING.md) for details.
 
 This GitHub repository contains all source code and a **self-contained README** with deployment, architecture, testing evidence placeholders, and demo video placeholder for workshop submission.
 
@@ -136,4 +142,32 @@ https://www.youtube.com/watch?v=Az_z21saz6E
 - JWT-based authentication
 - BCrypt password hashing
 - Security headers and controlled CORS
+- **🛡️ Automated threat modeling** with attack simulation
+- Continuous security testing in CI/CD pipeline
+
+## Threat Modeling & Security Testing
+
+This repository uses automated threat modeling to continuously test for vulnerabilities:
+
+- **Attack Simulations**: SQL Injection, Brute Force, Information Leakage
+- **Automated Runs**: On every push, PR, and weekly schedules
+- **Interactive Reports**: JSON results and HTML dashboard
+- **PR Comments**: Automatic vulnerability summaries on pull requests
+
+📚 **[View Full Threat Modeling Documentation](.github/THREAT_MODELING.md)**
+
+### Quick Start
+
+Run threat modeling locally:
+```bash
+# Start the login service
+cd back
+mvn spring-boot:run
+
+# In another terminal, run attack simulation
+cd /path/to/Attack-Simulation-FDSI
+./launch_attack.sh http://localhost:8080
+```
+
+View results in the interactive dashboard or check `results.json` for details.
 

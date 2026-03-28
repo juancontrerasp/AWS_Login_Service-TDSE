@@ -1,6 +1,7 @@
 package com.secure.login.config;
 
 import com.secure.login.security.JwtAuthFilter;
+import com.secure.login.security.AuthRateLimitFilter;
 import com.secure.login.security.JwtUtils;
 import com.secure.login.security.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,13 +33,15 @@ public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtUtils jwtUtils;
+    private final AuthRateLimitFilter authRateLimitFilter;
 
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
 
-    public SecurityConfig(UserDetailsServiceImpl userDetailsService, JwtUtils jwtUtils) {
+    public SecurityConfig(UserDetailsServiceImpl userDetailsService, JwtUtils jwtUtils, AuthRateLimitFilter authRateLimitFilter) {
         this.userDetailsService = userDetailsService;
         this.jwtUtils = jwtUtils;
+        this.authRateLimitFilter = authRateLimitFilter;
     }
 
     @Bean
@@ -104,6 +107,9 @@ public class SecurityConfig {
 
             // Use our DaoAuthenticationProvider
             .authenticationProvider(authenticationProvider())
+
+            // Rate limit auth attempts before auth processing
+            .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
 
             // Add JWT filter before Spring's username/password filter
             .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);
