@@ -32,7 +32,8 @@ jobs:
     steps:
       - name: Checkout Login Service
         uses: actions/checkout@v4
-        path: login-service
+        with:
+          path: login-service
 
       - name: Checkout Attack Simulation Tool
         uses: actions/checkout@v4

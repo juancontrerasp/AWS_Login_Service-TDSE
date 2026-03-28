@@ -38,3 +38,4 @@ build/
 SETUP_COMPLETE.md
 THREAT_MODELING.md
 QUICK_REFERENCE.md
+validate-workflows.sh
