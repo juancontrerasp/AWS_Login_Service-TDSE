@@ -55,7 +55,7 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         });
 
         if (current.requestCount() > maxRequests) {
-            response.setStatus(HttpServletResponse.SC_TOO_MANY_REQUESTS);
+            response.setStatus(429); // HTTP 429 Too Many Requests
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             objectMapper.writeValue(
                     response.getWriter(),
