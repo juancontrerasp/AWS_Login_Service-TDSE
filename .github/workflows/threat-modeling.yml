@@ -173,6 +173,39 @@ jobs:
             exit 1
           fi
 
+      - name: Create Self-Contained Dashboard
+        working-directory: attack-simulation
+        run: |
+          # Create a dashboard with embedded data (no CORS issues)
+          python3 << 'PYTHON_SCRIPT'
+          import json
+          import html
+          
+          # Read the results
+          with open('results.json', 'r') as f:
+              results_data = json.load(f)
+          
+          # Read the dashboard template
+          with open('dashboard.html', 'r') as f:
+              dashboard_content = f.read()
+          
+          # Convert results to JavaScript object
+          results_js = json.dumps(results_data)
+          
+          # Replace the fetch call with embedded data
+          fetch_pattern = "fetch('results.json?' + Date.now())"
+          embedded_data = f"Promise.resolve({{ok: true, json: () => Promise.resolve({results_js})}})"
+          
+          dashboard_standalone = dashboard_content.replace(fetch_pattern, embedded_data)
+          
+          # Write the standalone version
+          with open('dashboard-standalone.html', 'w') as f:
+              f.write(dashboard_standalone)
+          
+          print("✅ Created self-contained dashboard (dashboard-standalone.html)")
+          print("   This version has data embedded and works when opened directly in browser")
+          PYTHON_SCRIPT
+
       - name: Upload Threat Report
         uses: actions/upload-artifact@v4
         if: always()
@@ -182,6 +215,7 @@ jobs:
             attack-simulation/results.json
             attack-simulation/threat-report.md
             attack-simulation/dashboard.html
+            attack-simulation/dashboard-standalone.html
           retention-days: 90
 
       - name: Upload Application Logs
